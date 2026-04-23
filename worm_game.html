@@ -216,7 +216,7 @@
     const gridSize = 24;
     const tileCount = canvas.width / gridSize;
     const maxLives = 3;
-    const invincibleDuration = 1000;
+    const invincibleDuration = 3000;
     const baseSpeed = 240;
 
     let worm = [];
@@ -233,6 +233,7 @@
     let paused = false;
     let loopId = null;
     let invincibleUntil = 0;
+    let waitingForInput = false;
     let hitEffect = null;
 
     bestEl.textContent = String(bestScore);
@@ -372,6 +373,7 @@
       running = false;
       started = false;
       paused = false;
+      waitingForInput = true;
       pauseBtn.textContent = '일시정지';
       showMessage('시작 준비!', '방향키, 버튼, 또는 스와이프로 시작하세요.');
       draw();
@@ -393,6 +395,7 @@
       if (lives <= 0) {
         running = false;
         started = false;
+        waitingForInput = true;
         showMessage('게임 오버', `최종 점수: ${score}<br>방향키, 버튼, 또는 새 게임으로 다시 시작하세요.`);
         resetState();
         resetRound(3, false);
@@ -413,14 +416,24 @@
       }
 
       resetRound(reducedLength, true);
-      showMessage('앗!', `목숨이 1개 줄었습니다.<br>남은 목숨: ${lives}`);
+      running = false;
+      waitingForInput = true;
+      showMessage('앗!', `목숨이 1개 줄었습니다.<br>남은 목숨: ${lives}<br>버튼을 눌러 다시 시작하세요.`);
       draw();
-      setTimeout(() => {
-        if (started && !paused) hideMessage();
-      }, 500);
+    }
     }
 
     function startGameIfNeeded() {
+      if (waitingForInput) {
+        waitingForInput = false;
+        running = true;
+        started = true;
+        paused = false;
+        hideMessage();
+        gameLoop();
+        return;
+      }
+
       if (!started) {
         started = true;
         running = true;
@@ -428,6 +441,7 @@
         hideMessage();
         gameLoop();
       }
+    }
     }
 
     function setDirection(direction) {
