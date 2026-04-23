@@ -544,6 +544,42 @@
       button.addEventListener('touchstart', handler, { passive: false });
     });
 
+    // Swipe controls
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', (e) => {
+      const touch = e.changedTouches[0];
+      const dxSwipe = touch.clientX - touchStartX;
+      const dySwipe = touch.clientY - touchStartY;
+
+      const absX = Math.abs(dxSwipe);
+      const absY = Math.abs(dySwipe);
+
+      if (Math.max(absX, absY) < 20) return; // ignore small swipe
+
+      if (absX > absY) {
+        if (dxSwipe > 0) {
+          setDirection('right');
+        } else {
+          setDirection('left');
+        }
+      } else {
+        if (dySwipe > 0) {
+          setDirection('down');
+        } else {
+          setDirection('up');
+        }
+      }
+    }, { passive: true });
+    });
+
     startBtn.addEventListener('click', resetGame);
 
     pauseBtn.addEventListener('click', () => {
