@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>지렁이 게임</title>
+  <title>지렁이 게임 HTML 버전</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      padding: 16px;
       font-family: Arial, sans-serif;
       background: #f4f7f1;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: flex-start;
       min-height: 100vh;
-      padding: 16px;
     }
     .wrap {
       width: min(92vw, 560px);
-      background: white;
+      background: #ffffff;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
       padding: 20px;
     }
     .top {
@@ -32,46 +32,42 @@
       flex-wrap: wrap;
     }
     h1 {
-      font-size: 24px;
       margin: 0;
+      font-size: 24px;
+      color: #24321b;
     }
     .info {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
-      align-items: center;
+      gap: 8px;
     }
     .pill {
       background: #eef5e7;
       border-radius: 999px;
       padding: 8px 12px;
       font-size: 14px;
+      color: #2b3d1d;
     }
-    .lives {
-      display: inline-flex;
-      gap: 4px;
-      vertical-align: middle;
-      margin-left: 4px;
+    .lives .heart {
+      display: inline-block;
+      margin-left: 2px;
+      font-size: 17px;
     }
-    .heart {
-      font-size: 18px;
-      line-height: 1;
-      transition: transform 0.2s ease, opacity 0.2s ease;
-    }
-    .heart.off {
+    .lives .off {
       opacity: 0.25;
-      transform: scale(0.9);
     }
     .board-wrap {
       position: relative;
     }
     canvas {
       width: 100%;
-      height: auto;
+      max-width: 480px;
+      aspect-ratio: 1 / 1;
+      display: block;
+      margin: 0 auto;
       background: #dcecc8;
       border-radius: 16px;
       border: 2px solid #b7d19b;
-      display: block;
       touch-action: none;
     }
     .overlay {
@@ -81,18 +77,20 @@
       align-items: center;
       justify-content: center;
       pointer-events: none;
+      padding: 16px;
     }
     .message {
-      background: rgba(255,255,255,0.92);
+      background: rgba(255,255,255,0.94);
       padding: 18px 20px;
       border-radius: 16px;
       text-align: center;
       box-shadow: 0 8px 20px rgba(0,0,0,0.08);
       line-height: 1.5;
+      color: #334125;
     }
     .message strong {
-      font-size: 22px;
       display: block;
+      font-size: 22px;
       margin-bottom: 8px;
     }
     .controls {
@@ -107,8 +105,8 @@
       padding: 10px 14px;
       cursor: pointer;
       font-size: 14px;
+      color: #fff;
       background: #5d8f2a;
-      color: white;
     }
     button.secondary {
       background: #7a7a7a;
@@ -135,9 +133,6 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
       cursor: pointer;
     }
-    .dir-btn:active {
-      transform: scale(0.96);
-    }
     .dir-spacer {
       width: 64px;
       height: 64px;
@@ -161,11 +156,11 @@
 <body>
   <div class="wrap">
     <div class="top">
-      <h1>지렁이 게임</h1>
+      <h1>지렁이 게임 HTML 버전</h1>
       <div class="info">
         <div class="pill">점수: <span id="score">0</span></div>
         <div class="pill">최고 점수: <span id="best">0</span></div>
-        <div class="pill">목숨: <span class="lives" id="lives"></span></div>
+        <div class="pill lives">목숨: <span id="lives"></span></div>
       </div>
     </div>
 
@@ -195,476 +190,468 @@
 
     <div class="help">
       조작: 키보드 방향키 / 모바일 버튼 / 스와이프<br />
-      먹이 5개마다 장애물 5개가 추가됩니다.<br />
-      충돌하면 목숨이 1개 줄고, 길이는 20% 감소하며 랜덤 위치에서 다시 시작합니다.<br />
-      충돌 후 1초 무적이며, 장애물은 일부 제거됩니다. 목숨 3개를 모두 잃으면 처음부터 다시 시작합니다.
+      먹이 5개마다 장애물 5개 추가<br />
+      충돌 시 목숨 1 감소, 길이 20% 감소, 랜덤 위치 재시작, 장애물 일부 제거<br />
+      충돌 후 바로 움직이지 않고 입력 1번 후 재시작, 무적 시간 3초
     </div>
   </div>
 
   <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const scoreEl = document.getElementById('score');
-    const bestEl = document.getElementById('best');
-    const livesEl = document.getElementById('lives');
-    const overlay = document.getElementById('overlay');
-    const messageBox = document.getElementById('messageBox');
-    const startBtn = document.getElementById('startBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const dirButtons = document.querySelectorAll('.dir-btn');
+    (function () {
+      var canvas = document.getElementById('game');
+      var ctx = canvas.getContext('2d');
+      var scoreEl = document.getElementById('score');
+      var bestEl = document.getElementById('best');
+      var livesEl = document.getElementById('lives');
+      var overlay = document.getElementById('overlay');
+      var messageBox = document.getElementById('messageBox');
+      var startBtn = document.getElementById('startBtn');
+      var pauseBtn = document.getElementById('pauseBtn');
+      var dirButtons = document.querySelectorAll('.dir-btn');
 
-    const gridSize = 24;
-    const tileCount = canvas.width / gridSize;
-    const maxLives = 3;
-    const invincibleDuration = 3000;
-    const baseSpeed = 240;
+      var gridSize = 24;
+      var tileCount = canvas.width / gridSize;
+      var maxLives = 3;
+      var invincibleDuration = 3000;
+      var speed = 240;
 
-    let worm = [];
-    let food = { x: 0, y: 0 };
-    let obstacles = [];
-    let dx = 1;
-    let dy = 0;
-    let score = 0;
-    let foodsEaten = 0;
-    let lives = maxLives;
-    let bestScore = Number(localStorage.getItem('worm-best-score') || 0);
-    let running = false;
-    let started = false;
-    let paused = false;
-    let loopId = null;
-    let invincibleUntil = 0;
-    let waitingForInput = false;
-    let hitEffect = null;
+      var worm = [];
+      var food = { x: 0, y: 0 };
+      var obstacles = [];
+      var dx = 1;
+      var dy = 0;
+      var score = 0;
+      var bestScore = Number(localStorage.getItem('worm-best-score-html') || 0);
+      var lives = maxLives;
+      var foodsEaten = 0;
+      var running = false;
+      var paused = false;
+      var waitingForInput = true;
+      var invincibleUntil = 0;
+      var hitEffect = null;
+      var loopId = null;
+      var touchStartX = 0;
+      var touchStartY = 0;
 
-    bestEl.textContent = String(bestScore);
+      bestEl.textContent = String(bestScore);
 
-    function renderLives() {
-      livesEl.innerHTML = Array.from({ length: maxLives }, (_, i) => {
-        return `<span class="heart ${i < lives ? '' : 'off'}">❤</span>`;
-      }).join('');
-    }
-
-    function showMessage(title, text) {
-      messageBox.innerHTML = `<strong>${title}</strong>${text}`;
-      overlay.style.display = 'flex';
-    }
-
-    function hideMessage() {
-      overlay.style.display = 'none';
-    }
-
-    function isCellBlocked(x, y) {
-      return worm.some(part => part.x === x && part.y === y) ||
-             obstacles.some(part => part.x === x && part.y === y);
-    }
-
-    function randomFood() {
-      let pos;
-      let guard = 0;
-      do {
-        pos = {
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
-        };
-        guard += 1;
-      } while (isCellBlocked(pos.x, pos.y) && guard < 1000);
-      return pos;
-    }
-
-    function addRandomObstacles(count = 5) {
-      let added = 0;
-      let guard = 0;
-      while (added < count && guard < 2000) {
-        guard += 1;
-        const pos = {
-          x: Math.floor(Math.random() * tileCount),
-          y: Math.floor(Math.random() * tileCount)
-        };
-        const sameAsFood = food.x === pos.x && food.y === pos.y;
-        if (!isCellBlocked(pos.x, pos.y) && !sameAsFood) {
-          obstacles.push(pos);
-          added += 1;
+      function renderLives() {
+        var html = '';
+        for (var i = 0; i < maxLives; i += 1) {
+          html += '<span class="heart ' + (i < lives ? '' : 'off') + '">❤</span>';
         }
-      }
-    }
-
-    function resetRound(length = 3, randomSpawn = false) {
-      const targetLength = Math.max(3, length);
-      const directions = [
-        { dx: 1, dy: 0 },
-        { dx: -1, dy: 0 },
-        { dx: 0, dy: 1 },
-        { dx: 0, dy: -1 }
-      ];
-
-      if (!randomSpawn) {
-        worm = [];
-        for (let i = 0; i < targetLength; i += 1) {
-          worm.push({ x: 10 - i, y: 10 });
-        }
-        dx = 1;
-        dy = 0;
-        food = randomFood();
-        return;
+        livesEl.innerHTML = html;
       }
 
-      let placed = false;
-      let guard = 0;
-      while (!placed && guard < 2000) {
-        guard += 1;
-        const dir = directions[Math.floor(Math.random() * directions.length)];
-        const startX = Math.floor(Math.random() * tileCount);
-        const startY = Math.floor(Math.random() * tileCount);
-        const candidate = [];
-        let valid = true;
+      function showMessage(title, text) {
+        messageBox.innerHTML = '<strong>' + title + '</strong>' + text;
+        overlay.style.display = 'flex';
+      }
 
-        for (let i = 0; i < targetLength; i += 1) {
-          const x = startX - dir.dx * i;
-          const y = startY - dir.dy * i;
-          if (
-            x < 0 || x >= tileCount ||
-            y < 0 || y >= tileCount ||
-            obstacles.some(o => o.x === x && o.y === y)
-          ) {
-            valid = false;
-            break;
+      function hideMessage() {
+        overlay.style.display = 'none';
+      }
+
+      function sameCell(a, b) {
+        return a.x === b.x && a.y === b.y;
+      }
+
+      function isBlocked(cell, wormCells, obstacleCells) {
+        for (var i = 0; i < wormCells.length; i += 1) {
+          if (sameCell(wormCells[i], cell)) return true;
+        }
+        for (var j = 0; j < obstacleCells.length; j += 1) {
+          if (sameCell(obstacleCells[j], cell)) return true;
+        }
+        return false;
+      }
+
+      function randomFoodCell(wormCells, obstacleCells) {
+        for (var guard = 0; guard < 2000; guard += 1) {
+          var cell = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+          };
+          if (!isBlocked(cell, wormCells, obstacleCells)) return cell;
+        }
+        return { x: 0, y: 0 };
+      }
+
+      function addRandomObstacles(count) {
+        var added = 0;
+        var guard = 0;
+        while (added < count && guard < 3000) {
+          guard += 1;
+          var cell = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+          };
+          if (!isBlocked(cell, worm, obstacles) && !sameCell(cell, food)) {
+            obstacles.push(cell);
+            added += 1;
           }
-          candidate.push({ x, y });
-        }
-
-        if (valid) {
-          worm = candidate;
-          dx = dir.dx;
-          dy = dir.dy;
-          placed = true;
         }
       }
 
-      if (!placed) {
-        worm = [];
-        for (let i = 0; i < 3; i += 1) {
-          worm.push({ x: 10 - i, y: 10 });
+      function randomRespawn(length) {
+        var dirs = [
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -1 }
+        ];
+
+        for (var guard = 0; guard < 3000; guard += 1) {
+          var dir = dirs[Math.floor(Math.random() * dirs.length)];
+          var start = {
+            x: Math.floor(Math.random() * tileCount),
+            y: Math.floor(Math.random() * tileCount)
+          };
+          var nextWorm = [];
+          var valid = true;
+
+          for (var i = 0; i < length; i += 1) {
+            var cell = {
+              x: start.x - dir.dx * i,
+              y: start.y - dir.dy * i
+            };
+            if (
+              cell.x < 0 || cell.x >= tileCount ||
+              cell.y < 0 || cell.y >= tileCount ||
+              isBlocked(cell, [], obstacles)
+            ) {
+              valid = false;
+              break;
+            }
+            nextWorm.push(cell);
+          }
+
+          if (valid) {
+            worm = nextWorm;
+            dx = dir.dx;
+            dy = dir.dy;
+            return;
+          }
         }
+
+        worm = [
+          { x: 10, y: 10 },
+          { x: 9, y: 10 },
+          { x: 8, y: 10 }
+        ];
         dx = 1;
         dy = 0;
       }
 
-      food = randomFood();
-    }
-
-    function resetState() {
-      score = 0;
-      foodsEaten = 0;
-      lives = maxLives;
-      obstacles = [];
-      invincibleUntil = 0;
-      hitEffect = null;
-      scoreEl.textContent = String(score);
-      renderLives();
-    }
-
-    function resetGame() {
-      if (loopId) {
-        clearTimeout(loopId);
-        loopId = null;
+      function resetRound(length, randomSpawn) {
+        var targetLength = Math.max(3, length || 3);
+        if (!randomSpawn) {
+          worm = [];
+          for (var i = 0; i < targetLength; i += 1) {
+            worm.push({ x: 10 - i, y: 10 });
+          }
+          dx = 1;
+          dy = 0;
+        } else {
+          randomRespawn(targetLength);
+        }
+        food = randomFoodCell(worm, obstacles);
       }
-      resetState();
-      resetRound(3, false);
-      running = false;
-      started = false;
-      paused = false;
-      waitingForInput = true;
-      pauseBtn.textContent = '일시정지';
-      showMessage('시작 준비!', '방향키, 버튼, 또는 스와이프로 시작하세요.');
-      draw();
-    }
 
-    function triggerHitEffect(x, y) {
-      hitEffect = { x, y, start: performance.now() };
-      canvas.classList.remove('flash');
-      void canvas.offsetWidth;
-      canvas.classList.add('flash');
-      setTimeout(() => canvas.classList.remove('flash'), 400);
-    }
+      function resetState() {
+        score = 0;
+        lives = maxLives;
+        foodsEaten = 0;
+        obstacles = [];
+        invincibleUntil = 0;
+        hitEffect = null;
+        scoreEl.textContent = String(score);
+        renderLives();
+      }
 
-    function loseLife(head) {
-      triggerHitEffect(head.x, head.y);
-      lives -= 1;
-      renderLives();
-
-      if (lives <= 0) {
-        running = false;
-        started = false;
-        waitingForInput = true;
-        showMessage('게임 오버', `최종 점수: ${score}<br>방향키, 버튼, 또는 새 게임으로 다시 시작하세요.`);
+      function resetGame() {
+        if (loopId) {
+          clearTimeout(loopId);
+          loopId = null;
+        }
         resetState();
         resetRound(3, false);
+        running = false;
+        paused = false;
+        waitingForInput = true;
+        pauseBtn.textContent = '일시정지';
+        showMessage('시작 준비!', '방향키, 버튼, 또는 스와이프로 시작하세요.');
         draw();
-        return;
       }
 
-      const reducedLength = Math.max(3, Math.ceil(worm.length * 0.8));
-      invincibleUntil = performance.now() + invincibleDuration;
+      function startLoop() {
+        if (loopId) clearTimeout(loopId);
+        loopId = setTimeout(function () {
+          update();
+          draw();
+          if (running && !paused && !waitingForInput) {
+            startLoop();
+          }
+        }, speed);
+      }
 
-      if (obstacles.length > 0) {
-        const removeCount = Math.max(1, Math.floor(obstacles.length * 0.5));
-        for (let i = obstacles.length - 1; i > 0; i -= 1) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [obstacles[i], obstacles[j]] = [obstacles[j], obstacles[i]];
+      function startOrResume() {
+        if (waitingForInput) {
+          waitingForInput = false;
+          running = true;
+          paused = false;
+          hideMessage();
+          startLoop();
+          return;
         }
-        obstacles.splice(0, removeCount);
+        if (!running) {
+          running = true;
+          paused = false;
+          hideMessage();
+          startLoop();
+        }
       }
 
-      resetRound(reducedLength, true);
-      running = false;
-      waitingForInput = true;
-      showMessage('앗!', `목숨이 1개 줄었습니다.<br>남은 목숨: ${lives}<br>버튼을 눌러 다시 시작하세요.`);
-      draw();
-    }
-    }
+      function setDirection(dir) {
+        if (dir === 'up') {
+          if (dy === 1 && running && !waitingForInput) return;
+          dx = 0; dy = -1;
+        } else if (dir === 'down') {
+          if (dy === -1 && running && !waitingForInput) return;
+          dx = 0; dy = 1;
+        } else if (dir === 'left') {
+          if (dx === 1 && running && !waitingForInput) return;
+          dx = -1; dy = 0;
+        } else if (dir === 'right') {
+          if (dx === -1 && running && !waitingForInput) return;
+          dx = 1; dy = 0;
+        }
+        if (waitingForInput) startOrResume();
+      }
 
-    function startGameIfNeeded() {
-      if (waitingForInput) {
-        waitingForInput = false;
-        running = true;
-        started = true;
+      function triggerHitEffect(cell) {
+        hitEffect = { x: cell.x, y: cell.y, start: Date.now() };
+        canvas.classList.remove('flash');
+        void canvas.offsetWidth;
+        canvas.classList.add('flash');
+        setTimeout(function () {
+          canvas.classList.remove('flash');
+        }, 350);
+      }
+
+      function loseLife(head) {
+        triggerHitEffect(head);
+        lives -= 1;
+        renderLives();
+
+        if (lives <= 0) {
+          var finalScore = score;
+          resetGame();
+          showMessage('게임 오버', '최종 점수: ' + finalScore + '<br>방향키, 버튼, 또는 스와이프로 다시 시작하세요.');
+          return;
+        }
+
+        var reducedLength = Math.max(3, Math.ceil(worm.length * 0.8));
+        invincibleUntil = Date.now() + invincibleDuration;
+
+        if (obstacles.length > 0) {
+          var removeCount = Math.max(1, Math.floor(obstacles.length * 0.5));
+          obstacles.sort(function () { return Math.random() - 0.5; });
+          obstacles.splice(0, removeCount);
+        }
+
+        resetRound(reducedLength, true);
+        running = false;
         paused = false;
-        hideMessage();
-        gameLoop();
-        return;
+        waitingForInput = true;
+        showMessage('앗!', '목숨이 1개 줄었습니다.<br>남은 목숨: ' + lives + '<br>입력 후 다시 시작합니다. 무적 3초 적용.');
       }
 
-      if (!started) {
-        started = true;
-        running = true;
-        paused = false;
-        hideMessage();
-        gameLoop();
-      }
-    }
-    }
+      function update() {
+        if (!running || paused || waitingForInput) return;
 
-    function setDirection(direction) {
-      if (!running && !started) {
-        if (direction === 'up') { dx = 0; dy = -1; }
-        if (direction === 'down') { dx = 0; dy = 1; }
-        if (direction === 'left') { dx = -1; dy = 0; }
-        if (direction === 'right') { dx = 1; dy = 0; }
-        startGameIfNeeded();
-        return;
-      }
+        var head = { x: worm[0].x + dx, y: worm[0].y + dy };
+        var invincible = Date.now() < invincibleUntil;
+        var collided = false;
 
-      if (!running || paused) return;
+        if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
+          collided = true;
+        }
 
-      if (direction === 'up' && dy !== 1) {
-        dx = 0; dy = -1;
-      } else if (direction === 'down' && dy !== -1) {
-        dx = 0; dy = 1;
-      } else if (direction === 'left' && dx !== 1) {
-        dx = -1; dy = 0;
-      } else if (direction === 'right' && dx !== -1) {
-        dx = 1; dy = 0;
-      }
-    }
+        for (var i = 0; i < worm.length && !collided; i += 1) {
+          if (sameCell(worm[i], head)) collided = true;
+        }
 
-    function roundRect(context, x, y, width, height, radius) {
-      context.beginPath();
-      context.moveTo(x + radius, y);
-      context.lineTo(x + width - radius, y);
-      context.quadraticCurveTo(x + width, y, x + width, y + radius);
-      context.lineTo(x + width, y + height - radius);
-      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-      context.lineTo(x + radius, y + height);
-      context.quadraticCurveTo(x, y + height, x, y + height - radius);
-      context.lineTo(x, y + radius);
-      context.quadraticCurveTo(x, y, x + radius, y);
-      context.closePath();
-    }
+        for (var j = 0; j < obstacles.length && !collided; j += 1) {
+          if (sameCell(obstacles[j], head)) collided = true;
+        }
 
-    function drawTile(x, y, color, radius) {
-      const px = x * gridSize;
-      const py = y * gridSize;
-      ctx.fillStyle = color;
-      roundRect(ctx, px + 2, py + 2, gridSize - 4, gridSize - 4, radius);
-      ctx.fill();
-    }
+        if (collided) {
+          if (!invincible) loseLife(head);
+          return;
+        }
 
-    function drawHitEffect() {
-      if (!hitEffect) return;
-      const elapsed = performance.now() - hitEffect.start;
-      if (elapsed > 500) {
-        hitEffect = null;
-        return;
-      }
-      const alpha = 1 - elapsed / 500;
-      const radius = 10 + elapsed / 12;
-      const cx = hitEffect.x * gridSize + gridSize / 2;
-      const cy = hitEffect.y * gridSize + gridSize / 2;
+        worm.unshift(head);
 
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#ff5a5a';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const invincible = performance.now() < invincibleUntil;
-
-      for (let y = 0; y < tileCount; y += 1) {
-        for (let x = 0; x < tileCount; x += 1) {
-          ctx.fillStyle = (x + y) % 2 === 0 ? '#dcecc8' : '#d4e5c0';
-          ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+        if (sameCell(head, food)) {
+          score += 10;
+          foodsEaten += 1;
+          scoreEl.textContent = String(score);
+          if (score > bestScore) {
+            bestScore = score;
+            bestEl.textContent = String(bestScore);
+            localStorage.setItem('worm-best-score-html', String(bestScore));
+          }
+          if (foodsEaten % 5 === 0) addRandomObstacles(5);
+          food = randomFoodCell(worm, obstacles);
+        } else {
+          worm.pop();
         }
       }
 
-      drawTile(food.x, food.y, '#d94b4b', 10);
-
-      obstacles.forEach((part) => {
-        drawTile(part.x, part.y, '#6f7682', 5);
-      });
-
-      worm.forEach((part, index) => {
-        let color = index === 0 ? '#6a9f30' : '#7fb53d';
-        if (invincible) {
-          color = index === 0 ? '#8bb7ff' : '#b7d0ff';
-        }
-        drawTile(part.x, part.y, color, 8);
-      });
-
-      if (worm.length > 0) {
-        const eyeX = worm[0].x * gridSize;
-        const eyeY = worm[0].y * gridSize;
-        ctx.fillStyle = '#1f2a10';
+      function roundRect(x, y, width, height, radius) {
         ctx.beginPath();
-        ctx.arc(eyeX + 8, eyeY + 9, 2, 0, Math.PI * 2);
-        ctx.arc(eyeX + 16, eyeY + 9, 2, 0, Math.PI * 2);
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+      }
+
+      function drawTile(cell, color, radius) {
+        var px = cell.x * gridSize;
+        var py = cell.y * gridSize;
+        ctx.fillStyle = color;
+        roundRect(px + 2, py + 2, gridSize - 4, gridSize - 4, radius);
         ctx.fill();
       }
 
-      if (invincible) {
+      function drawHitEffect() {
+        if (!hitEffect) return;
+        var elapsed = Date.now() - hitEffect.start;
+        if (elapsed > 500) {
+          hitEffect = null;
+          return;
+        }
+        var alpha = 1 - elapsed / 500;
+        var radius = 10 + elapsed / 12;
+        var cx = hitEffect.x * gridSize + gridSize / 2;
+        var cy = hitEffect.y * gridSize + gridSize / 2;
+
         ctx.save();
-        ctx.globalAlpha = 0.12;
-        ctx.fillStyle = '#78a8ff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#ff5a5a';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
 
-      drawHitEffect();
-    }
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var invincible = Date.now() < invincibleUntil;
 
-    function update() {
-      const head = { x: worm[0].x + dx, y: worm[0].y + dy };
-      const now = performance.now();
-      const invincible = now < invincibleUntil;
-
-      const collided = (
-        head.x < 0 || head.x >= tileCount ||
-        head.y < 0 || head.y >= tileCount ||
-        worm.some(part => part.x === head.x && part.y === head.y) ||
-        obstacles.some(part => part.x === head.x && part.y === head.y)
-      );
-
-      if (collided) {
-        if (!invincible) {
-          loseLife(head);
+        for (var y = 0; y < tileCount; y += 1) {
+          for (var x = 0; x < tileCount; x += 1) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#dcecc8' : '#d4e5c0';
+            ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+          }
         }
-        return;
-      }
 
-      worm.unshift(head);
+        drawTile(food, '#d94b4b', 10);
 
-      if (head.x === food.x && head.y === food.y) {
-        score += 10;
-        foodsEaten += 1;
-        scoreEl.textContent = String(score);
-        if (score > bestScore) {
-          bestScore = score;
-          localStorage.setItem('worm-best-score', String(bestScore));
-          bestEl.textContent = String(bestScore);
+        for (var i = 0; i < obstacles.length; i += 1) {
+          drawTile(obstacles[i], '#6f7682', 5);
         }
-        if (foodsEaten % 5 === 0) {
-          addRandomObstacles(5);
+
+        for (var j = 0; j < worm.length; j += 1) {
+          var color = j === 0 ? '#6a9f30' : '#7fb53d';
+          if (invincible) color = j === 0 ? '#8bb7ff' : '#b7d0ff';
+          drawTile(worm[j], color, 8);
         }
-        food = randomFood();
-      } else {
-        worm.pop();
+
+        if (worm.length > 0) {
+          var eyeX = worm[0].x * gridSize;
+          var eyeY = worm[0].y * gridSize;
+          ctx.fillStyle = '#1f2a10';
+          ctx.beginPath();
+          ctx.arc(eyeX + 8, eyeY + 9, 2, 0, Math.PI * 2);
+          ctx.arc(eyeX + 16, eyeY + 9, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (invincible) {
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.fillStyle = '#78a8ff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.restore();
+        }
+
+        drawHitEffect();
       }
-    }
 
-    function gameLoop() {
-      if (!running || paused) return;
-      update();
-      draw();
-      loopId = setTimeout(gameLoop, baseSpeed);
-    }
+      document.addEventListener('keydown', function (e) {
+        var key = e.key;
+        if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+          e.preventDefault();
+        }
+        if (key === 'ArrowUp') setDirection('up');
+        else if (key === 'ArrowDown') setDirection('down');
+        else if (key === 'ArrowLeft') setDirection('left');
+        else if (key === 'ArrowRight') setDirection('right');
+      });
 
-    document.addEventListener('keydown', (e) => {
-      const key = e.key;
-      const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key);
-      if (isArrow) e.preventDefault();
-
-      if (key === 'ArrowUp') setDirection('up');
-      else if (key === 'ArrowDown') setDirection('down');
-      else if (key === 'ArrowLeft') setDirection('left');
-      else if (key === 'ArrowRight') setDirection('right');
-    });
-
-    dirButtons.forEach((button) => {
-      const dir = button.dataset.dir;
-      const handler = (e) => {
-        e.preventDefault();
-        setDirection(dir);
-      };
-      button.addEventListener('click', handler);
-      button.addEventListener('touchstart', handler, { passive: false });
-    });
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    canvas.addEventListener('touchstart', (e) => {
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }, { passive: true });
-
-    canvas.addEventListener('touchend', (e) => {
-      const touch = e.changedTouches[0];
-      const dxSwipe = touch.clientX - touchStartX;
-      const dySwipe = touch.clientY - touchStartY;
-      const absX = Math.abs(dxSwipe);
-      const absY = Math.abs(dySwipe);
-
-      if (Math.max(absX, absY) < 20) return;
-
-      if (absX > absY) {
-        setDirection(dxSwipe > 0 ? 'right' : 'left');
-      } else {
-        setDirection(dySwipe > 0 ? 'down' : 'up');
+      for (var b = 0; b < dirButtons.length; b += 1) {
+        (function (button) {
+          var dir = button.getAttribute('data-dir');
+          function handler(e) {
+            e.preventDefault();
+            setDirection(dir);
+          }
+          button.addEventListener('click', handler);
+          button.addEventListener('touchstart', handler, { passive: false });
+        })(dirButtons[b]);
       }
-    }, { passive: true });
 
-    startBtn.addEventListener('click', resetGame);
+      canvas.addEventListener('touchstart', function (e) {
+        var t = e.touches[0];
+        touchStartX = t.clientX;
+        touchStartY = t.clientY;
+      }, { passive: true });
 
-    pauseBtn.addEventListener('click', () => {
-      if (!started) return;
-      paused = !paused;
-      pauseBtn.textContent = paused ? '계속하기' : '일시정지';
-      if (paused) {
-        showMessage('일시정지', '계속하기 버튼을 누르면 다시 시작됩니다.');
-      } else {
-        hideMessage();
-        gameLoop();
-      }
-    });
+      canvas.addEventListener('touchend', function (e) {
+        var t = e.changedTouches[0];
+        var sx = t.clientX - touchStartX;
+        var sy = t.clientY - touchStartY;
+        var ax = Math.abs(sx);
+        var ay = Math.abs(sy);
+        if (Math.max(ax, ay) < 20) return;
+        if (ax > ay) setDirection(sx > 0 ? 'right' : 'left');
+        else setDirection(sy > 0 ? 'down' : 'up');
+      }, { passive: true });
 
-    renderLives();
-    resetGame();
+      startBtn.addEventListener('click', resetGame);
+      pauseBtn.addEventListener('click', function () {
+        if (waitingForInput) return;
+        paused = !paused;
+        pauseBtn.textContent = paused ? '계속하기' : '일시정지';
+        if (paused) {
+          showMessage('일시정지', '계속하기 버튼을 누르면 다시 시작됩니다.');
+        } else {
+          hideMessage();
+          startLoop();
+        }
+      });
+
+      resetGame();
+    })();
   </script>
 </body>
 </html>
